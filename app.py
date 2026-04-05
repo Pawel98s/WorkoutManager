@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -31,8 +31,8 @@ class Set(db.Model):
 
 
 @app.route('/')
-def hello_world():
-    return 'Hello World!'
+def mainPage():
+    return render_template('index.html')
 
 @app.route('/add-workout', methods=['POST'])
 def add_workout():
