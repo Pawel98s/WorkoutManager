@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -34,19 +34,42 @@ class Set(db.Model):
 def mainPage():
     return render_template('index.html')
 
-@app.route('/add-workout', methods=['POST'])
+
+@app.route('/add_workout', methods=['GET', 'POST'])
 def add_workout():
-    data = request.json
+    if request.method == 'POST':
+        workout = Workout(
+            name=request.form.get('workout_name'),
+            date=request.form.get('workout_date')
+        )
+        db.session.add(workout)
+        db.session.commit()
 
-    workout = Workout(
-        name=data.get('name'),
-        date=data.get('date')
-    )
+        exercise_names = request.form.getlist('exercise_name[]')
+        sets_list = request.form.getlist('sets[]')
+        reps_list = request.form.getlist('reps[]')
+        weight_list = request.form.getlist('weight[]')
 
-    db.session.add(workout)
-    db.session.commit()
+        for i in range(len(exercise_names)):
+            exercise = Exercise(name=exercise_names[i])
+            db.session.add(exercise)
+            db.session.commit()
 
-    return jsonify({"message": "Workout added"})
+            new_set = Set(
+                workout_id=workout.id,
+                exercise_id=exercise.id,
+                reps=int(reps_list[i]),
+                weight=float(weight_list[i]) if weight_list[i] else 0,
+                set_number=int(sets_list[i])
+            )
+
+            db.session.add(new_set)
+
+        db.session.commit()
+
+        return redirect(url_for('mainPage'))
+
+    return render_template('add_workout.html')
 
 
 with app.app_context():
