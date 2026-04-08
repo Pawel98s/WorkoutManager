@@ -1,8 +1,7 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:lahata@localhost:5432/workout'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -10,24 +9,97 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-
 class Workout(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50))
-    date = db.Column(db.String(20))
+    name = db.Column(db.String(50), nullable=False)
+    date = db.Column(db.String(20), nullable=False)
+
 
 class Exercise(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
+    name = db.Column(db.String(100), unique=True, nullable=False)
+
 
 class Set(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    workout_id = db.Column(db.Integer, db.ForeignKey('workout.id'))
-    exercise_id = db.Column(db.Integer, db.ForeignKey('exercise.id'))
+    workout_id = db.Column(db.Integer, db.ForeignKey('workout.id'), nullable=False)
+    exercise_id = db.Column(db.Integer, db.ForeignKey('exercise.id'), nullable=False)
     reps = db.Column(db.Integer)
     weight = db.Column(db.Float)
     set_number = db.Column(db.Integer)
 
+
+def seed_exercises():
+    exercise_names = [
+        "Wyciskanie sztangi leżąc",
+        "Wyciskanie hantli leżąc",
+        "Wyciskanie sztangi na ławce skośnej",
+        "Wyciskanie hantli na ławce skośnej",
+        "Rozpiętki z hantlami",
+        "Rozpiętki na bramie",
+        "Pompki",
+        "Pompki na poręczach",
+        "Martwy ciąg",
+        "Martwy ciąg rumuński",
+        "Wiosłowanie sztangą",
+        "Wiosłowanie hantlem",
+        "Podciąganie nachwytem",
+        "Podciąganie podchwytem",
+        "Ściąganie drążka do klatki",
+        "Przyciąganie linki wyciągu siedząc",
+        "Face pull",
+        "Szrugsy",
+        "Wyciskanie żołnierskie",
+        "Wyciskanie hantli siedząc",
+        "Arnold press",
+        "Unoszenie hantli bokiem",
+        "Unoszenie hantli w przód",
+        "Odwrotne rozpiętki",
+        "Uginanie ramion ze sztangą",
+        "Uginanie ramion z hantlami",
+        "Uginanie młotkowe",
+        "Uginanie na modlitewniku",
+        "Wyciskanie francuskie",
+        "Prostowanie ramion na wyciągu",
+        "Dipy na triceps",
+        "Wąskie wyciskanie sztangi",
+        "Przysiady ze sztangą",
+        "Przysiady przednie",
+        "Hack squat",
+        "Suwnica",
+        "Wykroki z hantlami",
+        "Bułgarskie przysiady",
+        "Uginanie nóg leżąc",
+        "Prostowanie nóg siedząc",
+        "Hip thrust",
+        "Wspięcia na palce stojąc",
+        "Wspięcia na palce siedząc",
+        "Glute bridge",
+        "Kickback na wyciągu",
+        "Przysiad sumo",
+        "Brzuszki",
+        "Spięcia brzucha",
+        "Unoszenie nóg w zwisie",
+        "Deska",
+        "Russian twist",
+        "Allahy na wyciągu",
+        "Bieganie na bieżni",
+        "Rower stacjonarny",
+        "Orbitrek",
+        "Skakanka",
+        "Burpees"
+    ]
+
+    existing_names = {exercise.name for exercise in Exercise.query.all()}
+    new_exercises = []
+
+    for name in exercise_names:
+        if name not in existing_names:
+            new_exercises.append(Exercise(name=name))
+
+    if new_exercises:
+        db.session.add_all(new_exercises)
+        db.session.commit()
 
 
 @app.route('/')
@@ -45,31 +117,30 @@ def add_workout():
         db.session.add(workout)
         db.session.commit()
 
-        exercise_names = request.form.getlist('exercise_name[]')
+        exercise_ids = request.form.getlist('exercise_id[]')
         sets_list = request.form.getlist('sets[]')
         reps_list = request.form.getlist('reps[]')
         weight_list = request.form.getlist('weight[]')
 
-        for i in range(len(exercise_names)):
-            exercise = Exercise(name=exercise_names[i])
-            db.session.add(exercise)
-            db.session.commit()
+        for i in range(len(exercise_ids)):
+            if not exercise_ids[i]:
+                continue
 
             new_set = Set(
                 workout_id=workout.id,
-                exercise_id=exercise.id,
-                reps=int(reps_list[i]),
+                exercise_id=int(exercise_ids[i]),
+                reps=int(reps_list[i]) if reps_list[i] else 0,
                 weight=float(weight_list[i]) if weight_list[i] else 0,
-                set_number=int(sets_list[i])
+                set_number=int(sets_list[i]) if sets_list[i] else 0
             )
-
             db.session.add(new_set)
 
         db.session.commit()
-
         return redirect(url_for('mainPage'))
 
-    return render_template('add_workout.html')
+    exercises = Exercise.query.order_by(Exercise.name.asc()).all()
+    return render_template('add_workout.html', exercises=exercises)
+
 @app.route('/workouts')
 def workouts_list():
     workouts = Workout.query.order_by(Workout.id.desc()).all()
@@ -85,34 +156,23 @@ def edit_workout(workout_id):
         workout.date = request.form.get('workout_date')
 
         old_sets = Set.query.filter_by(workout_id=workout.id).all()
-        old_exercise_ids = [s.exercise_id for s in old_sets]
-
         for s in old_sets:
             db.session.delete(s)
 
-        for exercise_id in old_exercise_ids:
-            exercise = Exercise.query.get(exercise_id)
-            if exercise:
-                db.session.delete(exercise)
-
         db.session.commit()
 
-        exercise_names = request.form.getlist('exercise_name[]')
+        exercise_ids = request.form.getlist('exercise_id[]')
         sets_list = request.form.getlist('sets[]')
         reps_list = request.form.getlist('reps[]')
         weight_list = request.form.getlist('weight[]')
 
-        for i in range(len(exercise_names)):
-            if not exercise_names[i].strip():
+        for i in range(len(exercise_ids)):
+            if not exercise_ids[i]:
                 continue
-
-            exercise = Exercise(name=exercise_names[i])
-            db.session.add(exercise)
-            db.session.commit()
 
             new_set = Set(
                 workout_id=workout.id,
-                exercise_id=exercise.id,
+                exercise_id=int(exercise_ids[i]),
                 reps=int(reps_list[i]) if reps_list[i] else 0,
                 weight=float(weight_list[i]) if weight_list[i] else 0,
                 set_number=int(sets_list[i]) if sets_list[i] else 0
@@ -123,12 +183,12 @@ def edit_workout(workout_id):
         return redirect(url_for('workouts_list'))
 
     workout_sets = Set.query.filter_by(workout_id=workout.id).all()
-    exercises_data = []
+    exercises = Exercise.query.order_by(Exercise.name.asc()).all()
 
+    exercises_data = []
     for s in workout_sets:
-        exercise = Exercise.query.get(s.exercise_id)
         exercises_data.append({
-            'exercise_name': exercise.name if exercise else '',
+            'exercise_id': s.exercise_id,
             'sets': s.set_number,
             'reps': s.reps,
             'weight': s.weight
@@ -137,26 +197,27 @@ def edit_workout(workout_id):
     return render_template(
         'edit_workout.html',
         workout=workout,
-        exercises_data=exercises_data
+        exercises_data=exercises_data,
+        exercises=exercises
     )
+
 
 @app.route('/history')
 def workout_history():
     workouts = Workout.query.order_by(Workout.id.desc()).all()
-
     history_data = []
 
     for workout in workouts:
         workout_sets = Set.query.filter_by(workout_id=workout.id).all()
         exercises = []
 
-        for s in workout_sets:
-            exercise = Exercise.query.get(s.exercise_id)
+        for single_set in workout_sets:
+            exercise = Exercise.query.get(single_set.exercise_id)
             exercises.append({
                 'name': exercise.name if exercise else 'Brak nazwy',
-                'set_number': s.set_number,
-                'reps': s.reps,
-                'weight': s.weight
+                'set_number': single_set.set_number,
+                'reps': single_set.reps,
+                'weight': single_set.weight
             })
 
         history_data.append({
@@ -168,8 +229,10 @@ def workout_history():
 
     return render_template('history.html', history_data=history_data)
 
+
 with app.app_context():
     db.create_all()
+    seed_exercises()
 
 if __name__ == '__main__':
     app.run(debug=True)

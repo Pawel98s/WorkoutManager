@@ -9,120 +9,151 @@
 <body class="bg-light">
 
 <div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h2 class="mb-0">Dodaj nowy trening</h2>
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h1 class="h2 mb-0">Dodaj nowy trening</h1>
+        </div>
+
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('add_workout') }}">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label for="workout_name" class="form-label">Nazwa treningu</label>
+                        <input
+                            type="text"
+                            id="workout_name"
+                            name="workout_name"
+                            class="form-control"
+                            placeholder="Np. Push/Pull/FBW"
+                            required
+                        >
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="workout_date" class="form-label">Data treningu</label>
+                        <input
+                            type="date"
+                            id="workout_date"
+                            name="workout_date"
+                            class="form-control"
+                            required
+                        >
+                    </div>
                 </div>
 
-                <div class="card-body">
-                    <form method="POST" action="{{ url_for('add_workout') }}">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <label for="workout_name" class="form-label">Nazwa treningu</label>
-                                <input type="text" class="form-control" id="workout_name" name="workout_name" placeholder="Np. Push/Pull/FBW" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="workout_date" class="form-label">Data treningu</label>
-                                <input type="date" class="form-control" id="workout_date" name="workout_date" required>
-                            </div>
-                        </div>
+                <hr class="my-4">
 
-                        <hr>
-
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="mb-0">Ćwiczenia</h4>
-                            <button type="button" class="btn btn-success" onclick="addExercise()">
-                                + Dodaj ćwiczenie
-                            </button>
-                        </div>
-
-                        <!-- Lista ćwiczeń -->
-                        <div id="exercise-list">
-                            <div class="exercise-item border rounded p-3 mb-3 bg-white">
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label">Nazwa ćwiczenia</label>
-                                        <input type="text" class="form-control" name="exercise_name[]" placeholder="Np. Wyciskanie sztangi" required>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label">Serie</label>
-                                        <input type="number" class="form-control" name="sets[]" min="1" placeholder="Np. 4" required>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label">Powtórzenia</label>
-                                        <input type="number" class="form-control" name="reps[]" min="1" placeholder="Np. 10" required>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label">Ciężar (kg)</label>
-                                        <input type="number" step="0.1" class="form-control" name="weight[]" min="0" placeholder="Np. 60">
-                                    </div>
-                                    <div class="col-md-3 d-flex align-items-end">
-                                        <button type="button" class="btn btn-danger w-100" onclick="removeExercise(this)">
-                                            Usuń ćwiczenie
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="/" class="btn btn-secondary">Powrót</a>
-                            <button type="submit" class="btn btn-primary">Zapisz trening</button>
-                        </div>
-                    </form>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h3 mb-0">Ćwiczenia</h2>
+                    <button type="button" class="btn btn-success" onclick="addExerciseRow()">
+                        + Dodaj ćwiczenie
+                    </button>
                 </div>
-            </div>
+
+                <div id="exercise-container">
+                    <div class="border rounded p-3 mb-3 exercise-row">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label">Nazwa ćwiczenia</label>
+                                <select name="exercise_id[]" class="form-select" required>
+                                    <option value="">Wybierz ćwiczenie</option>
+                                    {% for ex in exercises %}
+                                        <option value="{{ ex.id }}">{{ ex.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label class="form-label">Serie</label>
+                                <input type="number" name="sets[]" class="form-control" placeholder="Np. 4" min="1" required>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label class="form-label">Powtórzenia</label>
+                                <input type="number" name="reps[]" class="form-control" placeholder="Np. 10" min="1" required>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label class="form-label">Ciężar (kg)</label>
+                                <input type="number" step="0.1" name="weight[]" class="form-control" placeholder="Np. 60">
+                            </div>
+
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-danger w-100 remove-exercise">
+                                    Usuń ćwiczenie
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('mainPage') }}" class="btn btn-secondary">Powrót</a>
+                    <button type="submit" class="btn btn-primary">Zapisz trening</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
+<div id="exercise-options-template" class="d-none">
+    {% for ex in exercises %}
+        <option value="{{ ex.id }}">{{ ex.name }}</option>
+    {% endfor %}
+</div>
+
 <script>
-    function addExercise() {
-        const exerciseList = document.getElementById('exercise-list');
+function addExerciseRow() {
+    const container = document.getElementById('exercise-container');
 
-        const exerciseItem = document.createElement('div');
-        exerciseItem.className = 'exercise-item border rounded p-3 mb-3 bg-white';
+    const row = document.createElement('div');
+    row.className = 'border rounded p-3 mb-3 exercise-row';
 
-        exerciseItem.innerHTML = `
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Nazwa ćwiczenia</label>
-                    <input type="text" class="form-control" name="exercise_name[]" placeholder="Np. Martwy ciąg" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Serie</label>
-                    <input type="number" class="form-control" name="sets[]" min="1" placeholder="Np. 4" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Powtórzenia</label>
-                    <input type="number" class="form-control" name="reps[]" min="1" placeholder="Np. 8" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Ciężar (kg)</label>
-                    <input type="number" step="0.1" class="form-control" name="weight[]" min="0" placeholder="Np. 80">
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="button" class="btn btn-danger w-100" onclick="removeExercise(this)">
-                        Usuń ćwiczenie
-                    </button>
-                </div>
+    row.innerHTML = `
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Nazwa ćwiczenia</label>
+                <select name="exercise_id[]" class="form-select" required>
+                    <option value="">Wybierz ćwiczenie</option>
+                    ${document.getElementById('exercise-options-template').innerHTML}
+                </select>
             </div>
-        `;
 
-        exerciseList.appendChild(exerciseItem);
-    }
+            <div class="col-md-2">
+                <label class="form-label">Serie</label>
+                <input type="number" name="sets[]" class="form-control" placeholder="Np. 4" min="1" required>
+            </div>
 
-    function removeExercise(button) {
-        const exerciseItems = document.querySelectorAll('.exercise-item');
+            <div class="col-md-2">
+                <label class="form-label">Powtórzenia</label>
+                <input type="number" name="reps[]" class="form-control" placeholder="Np. 10" min="1" required>
+            </div>
 
-        if (exerciseItems.length > 1) {
-            button.closest('.exercise-item').remove();
-        } else {
-            alert('Trening musi zawierać przynajmniej jedno ćwiczenie.');
+            <div class="col-md-2">
+                <label class="form-label">Ciężar (kg)</label>
+                <input type="number" step="0.1" name="weight[]" class="form-control" placeholder="Np. 60">
+            </div>
+
+            <div class="col-md-3">
+                <button type="button" class="btn btn-danger w-100 remove-exercise">
+                    Usuń ćwiczenie
+                </button>
+            </div>
+        </div>
+    `;
+
+    container.appendChild(row);
+}
+
+document.addEventListener('click', function(event) {
+    if (event.target.classList.contains('remove-exercise')) {
+        const rows = document.querySelectorAll('.exercise-row');
+
+        if (rows.length > 1) {
+            event.target.closest('.exercise-row').remove();
         }
     }
+});
 </script>
 
 </body>

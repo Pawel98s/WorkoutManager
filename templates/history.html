@@ -24,11 +24,11 @@
                 <div class="card-body">
                     {% if workout.exercises %}
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped align-middle">
+                            <table class="table table-bordered table-striped">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Ćwiczenie</th>
-                                        <th>Liczba serii</th>
+                                        <th>Serie</th>
                                         <th>Powtórzenia</th>
                                         <th>Ciężar (kg)</th>
                                     </tr>
@@ -52,9 +52,7 @@
             </div>
         {% endfor %}
     {% else %}
-        <div class="alert alert-info">
-            Nie ma jeszcze żadnych zapisanych treningów.
-        </div>
+        <div class="alert alert-info">Nie ma jeszcze żadnych zapisanych treningów.</div>
     {% endif %}
 </div>
 
