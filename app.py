@@ -140,6 +140,34 @@ def edit_workout(workout_id):
         exercises_data=exercises_data
     )
 
+@app.route('/history')
+def workout_history():
+    workouts = Workout.query.order_by(Workout.id.desc()).all()
+
+    history_data = []
+
+    for workout in workouts:
+        workout_sets = Set.query.filter_by(workout_id=workout.id).all()
+        exercises = []
+
+        for s in workout_sets:
+            exercise = Exercise.query.get(s.exercise_id)
+            exercises.append({
+                'name': exercise.name if exercise else 'Brak nazwy',
+                'set_number': s.set_number,
+                'reps': s.reps,
+                'weight': s.weight
+            })
+
+        history_data.append({
+            'id': workout.id,
+            'name': workout.name,
+            'date': workout.date,
+            'exercises': exercises
+        })
+
+    return render_template('history.html', history_data=history_data)
+
 with app.app_context():
     db.create_all()
 
