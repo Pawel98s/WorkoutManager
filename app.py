@@ -229,6 +229,58 @@ def workout_history():
 
     return render_template('history.html', history_data=history_data)
 
+@app.route('/analysis', methods=['GET'])
+def analysis():
+    selected_exercise_id = request.args.get('exercise_id')
+
+    workouts = Workout.query.all()
+    sets = Set.query.all()
+    exercises = Exercise.query.order_by(Exercise.name.asc()).all()
+
+    total_workouts = len(workouts)
+
+    exercise_counter = {}
+    for s in sets:
+        exercise_counter[s.exercise_id] = exercise_counter.get(s.exercise_id, 0) + 1
+
+    most_popular_exercise = None
+    if exercise_counter:
+        most_id = max(exercise_counter, key=exercise_counter.get)
+        most_popular_exercise_obj = Exercise.query.get(most_id)
+        most_popular_exercise = most_popular_exercise_obj.name if most_popular_exercise_obj else None
+
+    total_sets = 0
+    total_volume = 0
+    chart_labels = []
+    chart_volumes = []
+
+    if selected_exercise_id:
+        selected_exercise_id = int(selected_exercise_id)
+
+        filtered_sets = Set.query.filter_by(exercise_id=selected_exercise_id).all()
+
+        total_sets = sum(s.set_number or 0 for s in filtered_sets)
+        total_volume = sum((s.weight or 0) * (s.reps or 0) * (s.set_number or 0) for s in filtered_sets)
+
+        for s in filtered_sets:
+            workout = Workout.query.get(s.workout_id)
+            volume = (s.weight or 0) * (s.reps or 0) * (s.set_number or 0)
+
+            chart_labels.append(workout.date if workout else "Brak daty")
+            chart_volumes.append(volume)
+
+    return render_template(
+        'analysis.html',
+        exercises=exercises,
+        total_workouts=total_workouts,
+        most_popular_exercise=most_popular_exercise,
+        total_sets=total_sets,
+        total_volume=round(total_volume, 2),
+        chart_labels=chart_labels,
+        chart_volumes=chart_volumes,
+        selected_exercise_id=selected_exercise_id
+    )
+
 
 with app.app_context():
     db.create_all()
