@@ -200,7 +200,16 @@ def edit_workout(workout_id):
         exercises_data=exercises_data,
         exercises=exercises
     )
+@app.route('/delete_workout/<int:workout_id>', methods=['POST'])
+def delete_workout(workout_id):
+    workout = Workout.query.get_or_404(workout_id)
 
+    Set.query.filter_by(workout_id=workout.id).delete()
+
+    db.session.delete(workout)
+    db.session.commit()
+
+    return redirect(url_for('workouts_list'))
 
 @app.route('/history')
 def workout_history():
